@@ -4,9 +4,7 @@ import './index.css';
 
 // Context
 import { AuthProvider, useAuth } from './context/AuthContext';
-
-// Services
-import socketService from './services/socket';
+import { SocketProvider, useSocket } from './context/SocketContext';
 
 // Components
 import Sidebar from './components/Sidebar';
@@ -27,7 +25,6 @@ function AppContent() {
   
   const [monitoringData, setMonitoringData] = useState([]);
   const [events, setEvents] = useState([]);
-  const [isLive, setIsLive] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -37,7 +34,9 @@ function AppContent() {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const { api } = useAuth();
+  const { isConnected, lastEvent, realTimeStats } = useSocket();
 
+  // Initial Data Fetch
   const fetchContainers = useCallback(async (isSilent = false) => {
     if (!isSilent) setIsUpdating(true);
     try {
@@ -59,70 +58,66 @@ function AppContent() {
     }
   }, [api]);
 
-  const addEvent = (containerName, type) => {
-    const newEvent = {
-      id: Date.now(),
-      containerName,
-      type,
-      timestamp: new Date().toLocaleTimeString()
-    };
-    setEvents(prev => [newEvent, ...prev].slice(0, 10));
-  };
-
+  // Handle Lifecycle Events (start, stop, etc.)
   useEffect(() => {
-    fetchContainers();
-    
-    const interval = setInterval(() => {
-      if (!socketService.isConnected()) {
-        fetchContainers(true);
-      }
-    }, 60000); 
-    
-    socketService.connect();
-    socketService.on('server:connected', () => setIsLive(true));
-    
-    socketService.on('docker:event', (event) => {
+    if (lastEvent) {
       setIsUpdating(true);
-      fetchContainers(true);
-      addEvent(event.containerName, event.actionType);
+      fetchContainers(true); // Silent re-fetch to keep container list sync
+      
+      const newEvent = {
+        id: Date.now(),
+        containerName: lastEvent.containerName,
+        type: lastEvent.action,
+        timestamp: new Date().toLocaleTimeString()
+      };
+      setEvents(prev => [newEvent, ...prev].slice(0, 10));
       
       const newNotification = {
         id: Date.now(),
-        title: `Container ${event.actionType.toUpperCase()}`,
-        message: `${event.containerName} is now ${event.actionType}`,
-        type: event.actionType === 'stop' ? 'error' : 'success'
+        title: `Container ${lastEvent.action.toUpperCase()}`,
+        message: `${lastEvent.containerName} is now ${lastEvent.status || lastEvent.action}`,
+        type: ['stop', 'die', 'kill', 'destroy'].includes(lastEvent.action) ? 'error' : 'success'
       };
+      
       setNotifications(prev => [newNotification, ...prev]);
       setTimeout(() => {
         setNotifications(prev => prev.filter(n => n.id !== newNotification.id));
       }, 5000);
-    });
+    }
+  }, [lastEvent, fetchContainers]);
 
-    return () => {
-      clearInterval(interval);
-      socketService.disconnect();
-    };
-  }, [fetchContainers]);
-
+  // Handle Real-time Stats & Telemetry
   useEffect(() => {
-    const interval = setInterval(() => {
+    if (realTimeStats) {
+      // Update Summary Stats
+      setStats(realTimeStats.stats);
+      
+      // Update Monitoring Chart Data
       setMonitoringData(prev => {
         const newData = [...prev, {
-          time: new Date().toLocaleTimeString(),
-          cpu: Math.floor(Math.random() * 30) + 10,
-          memory: Math.floor(Math.random() * 20) + 50,
-          containers: stats.running,
-          network: Math.floor(Math.random() * 100)
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+          cpu: realTimeStats.telemetry.cpu,
+          memory: realTimeStats.telemetry.memory,
+          containers: realTimeStats.stats.running,
+          network: realTimeStats.telemetry.network
         }];
         return newData.slice(-20);
       });
-    }, 4000);
-    return () => clearInterval(interval);
-  }, [stats.running]);
+
+      // Brief visual indicator of update
+      setIsUpdating(true);
+      setTimeout(() => setIsUpdating(false), 500);
+    }
+  }, [realTimeStats]);
+
+  useEffect(() => {
+    fetchContainers();
+  }, [fetchContainers]);
 
   const handleAction = async (id, action) => {
     try {
       await api.post(`containers/${id}/${action}`);
+      // No need to fetch containers here, the socket event will trigger it
     } catch (err) {
       alert(`Action failed: ${err.message}`);
     }
@@ -147,7 +142,7 @@ function AppContent() {
                 monitoringData={monitoringData}
                 events={events}
                 isUpdating={isUpdating}
-                isLive={isLive}
+                isLive={isConnected}
               />
             ) : (
               <ContainersView 
@@ -176,6 +171,7 @@ function AppContent() {
         <div className="p-8 text-center text-slate-500">Analytics module initializing...</div>
       </Modal>
 
+      {/* Real-time Notifications */}
       <div className="fixed bottom-8 right-8 z-[100] flex flex-col gap-3 max-w-md w-full">
         <AnimatePresence>
           {notifications.map((n) => (
@@ -203,7 +199,9 @@ function AppContent() {
 function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <SocketProvider>
+        <AppContent />
+      </SocketProvider>
     </AuthProvider>
   );
 }

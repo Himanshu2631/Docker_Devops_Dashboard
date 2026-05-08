@@ -28,11 +28,10 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Initialize Socket.IO
-try {
-  socketManager.init(server);
-} catch (err) {
-  console.error('⚠️ Warning: Socket.IO failed to initialize. Real-time updates will be unavailable.');
+// Initialize Socket.IO with environment-driven CORS
+const io = socketManager.init(server);
+if (!io) {
+  console.warn('⚠️ Warning: Socket.IO failed to initialize. Real-time updates will be unavailable.');
 }
 
 // Route Files

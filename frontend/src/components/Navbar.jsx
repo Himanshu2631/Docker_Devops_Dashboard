@@ -2,6 +2,7 @@ import { Search, Bell, Cpu, Server, Clock, LogIn, UserPlus, Ghost, Key, User, Se
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
+import { useSocket } from '../context/SocketContext';
 import AuthModal from './AuthModal';
 
 const Navbar = () => {
@@ -10,6 +11,7 @@ const Navbar = () => {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const dropdownRef = useRef(null);
   const { user, logout, isAuthenticated } = useAuth();
+  const { isConnected } = useSocket();
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
@@ -47,6 +49,19 @@ const Navbar = () => {
 
         <div className="flex items-center gap-6">
           <div className="hidden lg:flex items-center gap-4 px-4 py-2 bg-white/5 rounded-xl border border-white/5">
+            {/* Real-time Status Indicator */}
+            <div className="flex items-center gap-2 pr-4 border-r border-white/10">
+              <div className="relative flex items-center justify-center">
+                <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                {isConnected && (
+                  <span className="absolute w-2 h-2 bg-emerald-500 rounded-full animate-ping opacity-75" />
+                )}
+              </div>
+              <span className={`text-[10px] font-bold uppercase tracking-tighter ${isConnected ? 'text-emerald-500' : 'text-rose-500'}`}>
+                {isConnected ? 'Live' : 'Offline'}
+              </span>
+            </div>
+
             <div className="flex items-center gap-2 pr-4 border-r border-white/10">
               <Cpu size={16} className="text-accent-cyan" />
               <span className="text-xs font-mono text-slate-300">12.4%</span>
