@@ -4,6 +4,20 @@ const mongoose = require('mongoose');
  * DATABASE CONNECTION MANAGER
  * Designed to be resilient.
  */
+
+// Connection state listeners
+mongoose.connection.on('connected', () => {
+  console.log('✅ MongoDB Event: Connected');
+});
+
+mongoose.connection.on('error', (err) => {
+  console.error(`❌ MongoDB Event: Error - ${err.message}`);
+});
+
+mongoose.connection.on('disconnected', () => {
+  console.warn('⚠️ MongoDB Event: Disconnected');
+});
+
 const connectDB = async () => {
   try {
     // Force reload from .env in case of caching issues
@@ -37,6 +51,9 @@ const connectDB = async () => {
     console.log(`🚀 MongoDB Connected: ${mongoose.connection.host}`);
   } catch (error) {
     console.error(`❌ DB Connection Error: ${error.message}`);
+    if (error.message.includes('IP address')) {
+      console.error('👉 TIP: Ensure your current IP is whitelisted in MongoDB Atlas.');
+    }
     console.warn('🛠️ The server is still running, but Login/Signup features will fail until DB connects.');
   }
 };

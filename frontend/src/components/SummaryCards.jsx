@@ -3,7 +3,7 @@ import { Box, Play, Square, Activity } from 'lucide-react';
 
 const SummaryCards = ({ containers = [], stats: apiStats, isUpdating = false }) => {
   const safeContainers = Array.isArray(containers) ? containers : [];
-  
+
   const total = apiStats?.total ?? safeContainers.length;
   const running = apiStats?.running ?? safeContainers.filter(c => c.State === 'running').length;
   const stopped = apiStats?.exited ?? (total - running);
@@ -21,13 +21,13 @@ const SummaryCards = ({ containers = [], stats: apiStats, isUpdating = false }) 
         <motion.div
           key={index}
           initial={{ opacity: 0, y: 20 }}
-          animate={{ 
-            opacity: 1, 
+          animate={{
+            opacity: 1,
             y: 0,
             scale: isUpdating ? [1, 1.02, 1] : 1,
             borderColor: isUpdating ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.05)'
           }}
-          transition={{ 
+          transition={{
             delay: isUpdating ? 0 : stat.delay,
             scale: { duration: 0.4, ease: "easeInOut" },
             borderColor: { duration: 0.4 }
@@ -36,7 +36,7 @@ const SummaryCards = ({ containers = [], stats: apiStats, isUpdating = false }) 
           className="bg-[#111114]/40 backdrop-blur-xl border border-white/5 rounded-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] bg-gradient-to-br from-white/[0.05] to-transparent p-6 flex items-center gap-5 group hover:border-white/10 transition-all duration-300 relative overflow-hidden"
         >
           {isUpdating && (
-            <motion.div 
+            <motion.div
               initial={{ x: '-100%' }}
               animate={{ x: '200%' }}
               transition={{ duration: 0.8, ease: "linear" }}

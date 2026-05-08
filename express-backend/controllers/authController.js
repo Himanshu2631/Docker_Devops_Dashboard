@@ -1,5 +1,13 @@
 const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
 const User = require('../models/User');
+
+// Helper to check if DB is connected
+const checkDBConnection = () => {
+  if (mongoose.connection.readyState !== 1) {
+    throw new Error('Database is not connected. Please check backend logs for connection issues.');
+  }
+};
 
 // @desc    Register user
 // @route   POST /api/auth/signup
@@ -7,6 +15,9 @@ const User = require('../models/User');
 exports.signup = async (req, res) => {
   try {
     const { username, email, password, role } = req.body;
+
+    // Check DB Connection
+    checkDBConnection();
 
     // Check if user exists
     const userExists = await User.findOne({ email });
@@ -45,6 +56,9 @@ exports.signup = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
+
+    // Check DB Connection
+    checkDBConnection();
 
     // Check for user email
     const user = await User.findOne({ email }).select('+password');

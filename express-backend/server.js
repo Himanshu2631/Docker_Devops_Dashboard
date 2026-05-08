@@ -17,22 +17,18 @@ const PORT = process.env.PORT || 5000;
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
-// Initialize Database Connection
-// MongoDB Atlas connection string is loaded from process.env.MONGO_URI
-connectDB();
-
 const app = express();
 const server = http.createServer(app);
 
 // Middleware
 app.use(cors({
-  origin: FRONTEND_URL, // Use environment variable for CORS
+  origin: FRONTEND_URL,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true
 }));
 app.use(express.json());
 
-// Initialize Socket.IO with environment-driven CORS
+// Initialize Socket.IO
 try {
   socketManager.init(server);
 } catch (err) {
@@ -57,12 +53,24 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Start Server
-server.listen(PORT, () => {
-  console.log(`
+// Start Server with DB readiness check
+const startServer = async () => {
+  try {
+    // Initialize Database Connection
+    await connectDB();
+
+    server.listen(PORT, () => {
+      console.log(`
   🚀 SYSTEM BOOT COMPLETE
   📡 PORT: ${PORT}
   🛠️  ENVIRONMENT: ${NODE_ENV}
   🌐 FRONTEND_URL: ${FRONTEND_URL}
   `);
-});
+    });
+  } catch (err) {
+    console.error(`❌ FATAL: Backend failed to boot: ${err.message}`);
+    process.exit(1);
+  }
+};
+
+startServer();

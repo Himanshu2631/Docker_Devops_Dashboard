@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
 const User = require('../models/User');
 
 const protect = async (req, res, next) => {
@@ -16,6 +17,9 @@ const protect = async (req, res, next) => {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
       // Get user from the token
+      if (mongoose.connection.readyState !== 1) {
+        return res.status(503).json({ success: false, message: 'Database connection is currently unavailable. Please try again in a moment.' });
+      }
       req.user = await User.findById(decoded.id).select('-password');
 
       next();
