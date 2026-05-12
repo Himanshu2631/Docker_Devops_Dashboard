@@ -17,6 +17,7 @@ import DashboardView from './pages/DashboardView';
 import ContainersView from './pages/ContainersView';
 import Topology from './pages/Topology';
 import Analytics from './pages/Analytics';
+import AICopilot from './pages/AICopilot';
 
 function AppContent() {
   const [activeView, setActiveView] = useState('dashboard');
@@ -165,6 +166,9 @@ function AppContent() {
             )}
             {activeView === 'analytics' && (
               <Analytics key="analytics" containers={containers} />
+            )}
+            {activeView === 'ai' && (
+              <AICopilot key="ai" />
             )}
           </AnimatePresence>
         </div>

@@ -1,4 +1,4 @@
-import { LayoutDashboard, Database, Activity, Settings, Shield, ChevronLeft, ChevronRight, HardDrive, Network } from 'lucide-react';
+import { LayoutDashboard, Database, Activity, Settings, Shield, ChevronLeft, ChevronRight, HardDrive, Network, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '../lib/utils';
@@ -11,6 +11,7 @@ const Sidebar = ({ activeView, onViewChange }) => {
     { id: 'containers', icon: Database, label: 'Containers', active: activeView === 'containers' },
     { id: 'topology', icon: Network, label: 'Infrastructure Map', active: activeView === 'topology' },
     { id: 'analytics', icon: Activity, label: 'Analytics', active: activeView === 'analytics' },
+    { id: 'ai', icon: Sparkles, label: 'AI Copilot', active: activeView === 'ai' },
     { id: 'images', icon: HardDrive, label: 'Images', active: false },
     { id: 'security', icon: Shield, label: 'Security', active: false },
     { id: 'settings', icon: Settings, label: 'Settings', active: false },
