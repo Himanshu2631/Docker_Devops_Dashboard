@@ -15,6 +15,8 @@ import TerminalConsole from './components/TerminalConsole';
 // Views
 import DashboardView from './pages/DashboardView';
 import ContainersView from './pages/ContainersView';
+import Topology from './pages/Topology';
+import Analytics from './pages/Analytics';
 
 function AppContent() {
   const [activeView, setActiveView] = useState('dashboard');
@@ -134,7 +136,7 @@ function AppContent() {
       <main className="pl-[280px] pt-28 pr-8 pb-32 min-h-screen">
         <div className="max-w-[1600px] mx-auto">
           <AnimatePresence mode="wait">
-            {activeView === 'dashboard' ? (
+            {activeView === 'dashboard' && (
               <DashboardView 
                 key="dashboard"
                 containers={containers}
@@ -144,7 +146,8 @@ function AppContent() {
                 isUpdating={isUpdating}
                 isLive={isConnected}
               />
-            ) : (
+            )}
+            {activeView === 'containers' && (
               <ContainersView 
                 key="containers"
                 containers={containers}
@@ -156,6 +159,12 @@ function AppContent() {
                 onStats={() => setIsModalOpen(true)}
                 onRefresh={() => fetchContainers()}
               />
+            )}
+            {activeView === 'topology' && (
+              <Topology key="topology" containers={containers} />
+            )}
+            {activeView === 'analytics' && (
+              <Analytics key="analytics" containers={containers} />
             )}
           </AnimatePresence>
         </div>

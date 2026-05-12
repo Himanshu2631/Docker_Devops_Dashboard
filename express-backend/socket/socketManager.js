@@ -7,6 +7,7 @@
 const { Server } = require('socket.io');
 const { startStreamingEvents } = require('../services/dockerEventService');
 const { startStatsBroadcast } = require('../services/dockerStatsService');
+const { startMetricsPersistence } = require('../services/metricsPersistenceService');
 
 let io;
 
@@ -42,6 +43,7 @@ const init = (httpServer) => {
     // Start Real-time Services
     startStreamingEvents(io);
     startStatsBroadcast(io);
+    startMetricsPersistence(); // Persist metrics based on environment config
 
     return io;
   } catch (error) {

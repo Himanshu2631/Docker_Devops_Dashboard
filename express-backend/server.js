@@ -37,10 +37,12 @@ if (!io) {
 // Route Files
 const dockerRoutes = require('./routes/docker.routes');
 const authRoutes = require('./routes/authRoutes');
+const analyticsRoutes = require('./routes/analyticsRoutes');
 
 // Mount Routes
 app.use('/api/containers', dockerRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // System Health Check
 app.get('/health', (req, res) => {
