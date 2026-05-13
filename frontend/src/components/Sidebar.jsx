@@ -1,4 +1,4 @@
-import { LayoutDashboard, Database, Activity, Settings, Shield, ChevronLeft, ChevronRight, HardDrive, Network, Sparkles } from 'lucide-react';
+import { LayoutDashboard, Database, Activity, Settings, Shield, ChevronLeft, ChevronRight, HardDrive, Network } from 'lucide-react';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '../lib/utils';
@@ -7,87 +7,111 @@ const Sidebar = ({ activeView, onViewChange }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const menuItems = [
-    { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', active: activeView === 'dashboard' },
-    { id: 'containers', icon: Database, label: 'Containers', active: activeView === 'containers' },
-    { id: 'topology', icon: Network, label: 'Infrastructure Map', active: activeView === 'topology' },
-    { id: 'analytics', icon: Activity, label: 'Analytics', active: activeView === 'analytics' },
-    { id: 'ai', icon: Sparkles, label: 'AI Copilot', active: activeView === 'ai' },
-    { id: 'images', icon: HardDrive, label: 'Images', active: false },
-    { id: 'security', icon: Shield, label: 'Security', active: false },
-    { id: 'settings', icon: Settings, label: 'Settings', active: false },
+    { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { id: 'containers', icon: Database, label: 'Containers' },
+    { id: 'topology', icon: Network, label: 'Infra Map' },
+    { id: 'analytics', icon: Activity, label: 'Analytics' },
+
+    { id: 'images', icon: HardDrive, label: 'Images' },
+    { id: 'security', icon: Shield, label: 'Security' },
+    { id: 'settings', icon: Settings, label: 'Settings' },
   ];
 
   return (
     <motion.aside
       initial={false}
-      animate={{ width: isCollapsed ? '80px' : '260px' }}
-      className="bg-[#111114]/60 backdrop-blur-md border-r border-white/5 h-screen fixed left-0 top-0 z-50 flex flex-col transition-all duration-300"
+      animate={{ width: isCollapsed ? '56px' : '220px' }}
+      transition={{ duration: 0.2, ease: 'easeInOut' }}
+      className="bg-surface-1 border-r border-white/[0.06] h-screen fixed left-0 top-0 z-50 flex flex-col overflow-hidden"
     >
-      <div className="p-6 flex items-center justify-between">
+      {/* Logo */}
+      <div className="h-14 flex items-center justify-between px-4 border-b border-white/[0.06] shrink-0">
         {!isCollapsed && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="flex items-center gap-3"
+            transition={{ delay: 0.05 }}
+            className="flex items-center gap-2.5"
           >
-            <div className="w-8 h-8 bg-accent-blue rounded-lg flex items-center justify-center shadow-[0_0_15px_rgba(59,130,246,0.5)]">
-              <Activity className="text-white w-5 h-5" />
+            <div className="w-6 h-6 bg-accent-blue rounded-md flex items-center justify-center">
+              <Activity className="text-white w-3.5 h-3.5" />
             </div>
-            <span className="font-bold text-xl tracking-tight text-white">Docker<span className="text-accent-blue">OS</span></span>
+            <span className="font-semibold text-sm text-white tracking-tight">
+              Docker<span className="text-accent-blue">OS</span>
+            </span>
           </motion.div>
         )}
-        <button 
+        <button
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="p-2 hover:bg-white/5 rounded-lg text-slate-400 transition-colors"
+          className={cn(
+            "p-1.5 hover:bg-white/5 rounded-md text-slate-500 hover:text-slate-300 transition-colors",
+            isCollapsed && "mx-auto"
+          )}
         >
-          {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+          {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
         </button>
       </div>
 
-      <nav className="flex-1 px-4 mt-4 space-y-2">
-        {menuItems.map((item, index) => (
-          <button
-            key={index}
-            onClick={() => item.id && onViewChange(item.id)}
-            className={cn(
-              "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 text-slate-400 hover:text-white hover:bg-white/5",
-              item.active && "bg-blue-500/10 border border-blue-500/20 text-accent-blue",
-              isCollapsed && "justify-center px-0"
-            )}
-          >
-            <item.icon size={22} className={cn(item.active ? "text-accent-blue" : "text-slate-400")} />
-            {!isCollapsed && (
-              <motion.span
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="font-medium"
-              >
-                {item.label}
-              </motion.span>
-            )}
-          </button>
-        ))}
+      {/* Nav */}
+      <nav className="flex-1 px-2 pt-3 space-y-0.5 overflow-y-auto">
+        {menuItems.map((item) => {
+          const isActive = activeView === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => onViewChange(item.id)}
+              title={isCollapsed ? item.label : undefined}
+              className={cn(
+                "w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-sm transition-all duration-150",
+                isActive
+                  ? "bg-accent-blue/10 text-white"
+                  : "text-slate-500 hover:text-slate-300 hover:bg-white/[0.04]",
+                isCollapsed && "justify-center px-0"
+              )}
+            >
+              <item.icon
+                size={16}
+                className={cn(
+                  "shrink-0",
+                  isActive ? "text-accent-blue" : "text-slate-500"
+                )}
+              />
+              {!isCollapsed && (
+                <motion.span
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.04 }}
+                  className="font-medium truncate"
+                >
+                  {item.label}
+                </motion.span>
+              )}
+              {/* Active indicator — left border style */}
+              {isActive && !isCollapsed && (
+                <span className="ml-auto w-1 h-4 rounded-full bg-accent-blue opacity-70" />
+              )}
+            </button>
+          );
+        })}
       </nav>
 
-      <div className="p-4 border-t border-white/5">
-        <div className={cn(
-          "bg-gradient-to-br from-accent-blue/10 to-accent-purple/10 border border-white/5 rounded-2xl p-4",
-          isCollapsed && "p-2"
-        )}>
-          {!isCollapsed ? (
-            <>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">System Health</span>
-                <span className="text-xs text-accent-cyan font-mono">98%</span>
-              </div>
-              <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
-                <div className="h-full bg-accent-cyan w-[98%] shadow-[0_0_10px_rgba(6,182,212,0.5)]"></div>
-              </div>
-            </>
-          ) : (
-            <div className="w-2 h-2 rounded-full bg-accent-cyan mx-auto shadow-[0_0_10px_rgba(6,182,212,0.5)]"></div>
-          )}
-        </div>
+      {/* Footer health indicator */}
+      <div className="p-3 border-t border-white/[0.06] shrink-0">
+        {!isCollapsed ? (
+          <div className="px-2.5 py-2">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-2xs font-semibold text-slate-500 uppercase tracking-widest">System Health</span>
+              <span className="font-mono text-2xs text-accent-green">98%</span>
+            </div>
+            <div className="h-0.5 bg-white/5 rounded-full overflow-hidden">
+              <div className="h-full bg-accent-green w-[98%] opacity-70" />
+            </div>
+          </div>
+        ) : (
+          <div className="flex justify-center">
+            <div className="w-1.5 h-1.5 rounded-full bg-accent-green" />
+          </div>
+        )}
       </div>
     </motion.aside>
   );

@@ -38,19 +38,21 @@ if (!io) {
 const dockerRoutes = require('./routes/docker.routes');
 const authRoutes = require('./routes/authRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
-const aiRoutes = require('./routes/aiRoutes');
+const imageRoutes = require('./routes/imageRoutes');
+
 
 // Mount Routes
 app.use('/api/containers', dockerRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/analytics', analyticsRoutes);
-app.use('/api/ai', aiRoutes);
+app.use('/api/images', imageRoutes);
+
 
 // System Health Check
 app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'UP', 
-    message: 'Cyberpunk Docker Backend Operational',
+  res.json({
+    status: 'UP',
+    message: 'Docker Observability Backend Operational',
     environment: NODE_ENV,
     timestamp: new Date().toISOString()
   });

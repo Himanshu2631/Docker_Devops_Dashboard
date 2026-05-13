@@ -1,29 +1,28 @@
+import { AnimatePresence } from 'framer-motion';
 import ContainerCard from './ContainerCard';
-import { motion, AnimatePresence } from 'framer-motion';
 
 const ContainerList = ({ containers, onAction, onLogs, onStats }) => {
-  const safeContainers = Array.isArray(containers) ? containers.filter(c => c && c.Id) : [];
+  const safe = Array.isArray(containers) ? containers.filter(c => c?.Id) : [];
 
-  if (safeContainers.length === 0) {
+  if (safe.length === 0) {
     return (
-      <div className="bg-[#111114]/40 backdrop-blur-xl border border-white/5 rounded-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] p-20 flex flex-col items-center justify-center text-center">
-        <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mb-4 border border-white/5">
-          <div className="w-8 h-8 border-2 border-slate-700 border-dashed rounded-full" />
+      <div className="card p-12 flex flex-col items-center justify-center text-center">
+        <div className="font-mono text-2xs text-slate-700 mb-3 select-none">
+          <span className="text-slate-600">$</span> docker ps --all
         </div>
-        <h3 className="text-xl font-bold text-white mb-2">No Containers Found</h3>
-        <p className="text-slate-500 max-w-xs">Start some Docker containers to see them appear here in real-time.</p>
+        <p className="text-slate-500 text-sm mb-1">No containers found</p>
+        <p className="text-slate-700 text-xs">Start a Docker container to see it appear here.</p>
       </div>
     );
-
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
       <AnimatePresence mode="popLayout">
-        {safeContainers.map((container) => (
-          <ContainerCard 
-            key={container.Id} 
-            container={container} 
+        {safe.map(container => (
+          <ContainerCard
+            key={container.Id}
+            container={container}
             onAction={onAction}
             onLogs={onLogs}
             onStats={onStats}

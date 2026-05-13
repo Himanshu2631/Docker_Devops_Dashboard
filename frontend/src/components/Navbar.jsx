@@ -1,4 +1,4 @@
-import { Search, Bell, Cpu, Server, Clock, LogIn, UserPlus, Ghost, Key, User, Settings, LogOut, Shield } from 'lucide-react';
+import { Search, Bell, Cpu, Server, Clock, LogIn, Ghost, User, Settings, LogOut, Shield } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
@@ -19,8 +19,8 @@ const Navbar = () => {
   }, []);
 
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setIsProfileOpen(false);
       }
     };
@@ -28,137 +28,122 @@ const Navbar = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleAuthClick = () => {
-    setIsProfileOpen(false);
-    setIsAuthModalOpen(true);
-  };
-
   return (
     <>
-      <nav className="h-20 bg-[#111114]/60 backdrop-blur-md border-b border-white/5 fixed top-0 right-0 left-0 z-40 flex items-center justify-between px-8 pl-[280px]">
-        <div className="flex items-center gap-8 flex-1">
-          <div className="relative group max-w-md w-full">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-accent-blue transition-colors" size={18} />
-            <input 
-              type="text" 
-              placeholder="Search containers, images, logs..."
-              className="w-full bg-white/5 border border-white/5 rounded-xl py-2.5 pl-12 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue/30 transition-all placeholder:text-slate-600 shadow-inner group-focus-within:shadow-[0_0_20px_rgba(59,130,246,0.1)]"
-            />
-          </div>
+      <nav className="h-14 bg-surface-1/80 backdrop-blur-md border-b border-white/[0.06] fixed top-0 right-0 left-0 z-40 flex items-center justify-between px-6 pl-[236px]">
+        {/* Search */}
+        <div className="relative group max-w-sm w-full">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600 group-focus-within:text-slate-400 transition-colors" size={14} />
+          <input
+            type="text"
+            placeholder="Search containers, images, logs..."
+            className="w-full bg-white/[0.04] border border-white/[0.06] rounded-lg py-2 pl-9 pr-4 text-sm text-slate-300 placeholder:text-slate-600 focus:outline-none focus:border-accent-blue/30 focus:bg-white/[0.06] transition-all"
+          />
         </div>
 
-        <div className="flex items-center gap-6">
-          <div className="hidden lg:flex items-center gap-4 px-4 py-2 bg-white/5 rounded-xl border border-white/5">
-            {/* Real-time Status Indicator */}
-            <div className="flex items-center gap-2 pr-4 border-r border-white/10">
-              <div className="relative flex items-center justify-center">
-                <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500' : 'bg-rose-500'}`} />
-                {isConnected && (
-                  <span className="absolute w-2 h-2 bg-emerald-500 rounded-full animate-ping opacity-75" />
-                )}
-              </div>
-              <span className={`text-[10px] font-bold uppercase tracking-tighter ${isConnected ? 'text-emerald-500' : 'text-rose-500'}`}>
-                {isConnected ? 'Live' : 'Offline'}
+        {/* Right cluster */}
+        <div className="flex items-center gap-4">
+          {/* Telemetry strip */}
+          <div className="hidden lg:flex items-center gap-0 border border-white/[0.06] rounded-lg bg-surface-2 divide-x divide-white/[0.06]">
+            {/* Live indicator */}
+            <div className="flex items-center gap-2 px-3 py-1.5">
+              <span className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-accent-green' : 'bg-slate-600'} ${isConnected ? 'animate-pulse' : ''}`} />
+              <span className={`font-mono text-2xs font-medium ${isConnected ? 'text-accent-green' : 'text-slate-600'}`}>
+                {isConnected ? 'LIVE' : 'OFFLINE'}
               </span>
             </div>
-
-            <div className="flex items-center gap-2 pr-4 border-r border-white/10">
-              <Cpu size={16} className="text-accent-cyan" />
-              <span className="text-xs font-mono text-slate-300">12.4%</span>
+            <div className="flex items-center gap-1.5 px-3 py-1.5">
+              <Cpu size={12} className="text-slate-500" />
+              <span className="font-mono text-2xs text-slate-300">12.4%</span>
             </div>
-            <div className="flex items-center gap-2 pr-4 border-r border-white/10">
-              <Server size={16} className="text-accent-blue" />
-              <span className="text-xs font-mono text-slate-300">4.2 GB</span>
+            <div className="flex items-center gap-1.5 px-3 py-1.5">
+              <Server size={12} className="text-slate-500" />
+              <span className="font-mono text-2xs text-slate-300">4.2 GB</span>
             </div>
-            <div className="flex items-center gap-2">
-              <Clock size={16} className="text-accent-purple" />
-              <span className="text-xs font-mono text-slate-300">
+            <div className="flex items-center gap-1.5 px-3 py-1.5">
+              <Clock size={12} className="text-slate-500" />
+              <span className="font-mono text-2xs text-slate-300">
                 {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 relative" ref={dropdownRef}>
-            <button className="p-2.5 hover:bg-white/5 rounded-xl text-slate-400 relative transition-colors">
-              <Bell size={20} />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-accent-blue rounded-full ring-4 ring-dark"></span>
-            </button>
-            
-            <button 
+          {/* Notification */}
+          <button className="p-1.5 hover:bg-white/5 rounded-md text-slate-500 hover:text-slate-300 transition-colors relative">
+            <Bell size={16} />
+            <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-accent-blue rounded-full" />
+          </button>
+
+          {/* Avatar dropdown */}
+          <div className="relative" ref={dropdownRef}>
+            <button
               onClick={() => setIsProfileOpen(!isProfileOpen)}
-              className={`w-10 h-10 rounded-xl bg-gradient-to-br from-accent-blue to-accent-purple p-[1px] transition-all duration-300 hover:shadow-[0_0_20px_rgba(59,130,246,0.4)] ${isProfileOpen ? 'ring-2 ring-accent-blue/50 scale-105' : ''}`}
+              className={`w-8 h-8 rounded-md border transition-all ${isProfileOpen ? 'border-accent-blue/40 bg-accent-blue/10' : 'border-white/[0.08] bg-surface-2 hover:border-white/20'}`}
             >
-              <div className="w-full h-full rounded-[11px] bg-dark flex items-center justify-center overflow-hidden">
-                <img 
-                  src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user ? user.username : 'DockerAdmin'}`} 
-                  alt="Avatar" 
-                  className="w-8 h-8" 
-                />
-              </div>
+              <img
+                src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.username || 'DockerAdmin'}`}
+                alt="Avatar"
+                className="w-full h-full rounded-[5px] object-cover"
+              />
             </button>
 
             <AnimatePresence>
               {isProfileOpen && (
                 <motion.div
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  initial={{ opacity: 0, y: 6, scale: 0.97 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className="absolute top-[calc(100%+12px)] right-0 w-72 bg-[#0c0c0e]/90 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden z-50"
+                  exit={{ opacity: 0, y: 4, scale: 0.97 }}
+                  transition={{ duration: 0.12 }}
+                  className="absolute top-[calc(100%+8px)] right-0 w-64 bg-surface-2 border border-white/[0.08] rounded-xl shadow-xl overflow-hidden z-50"
                 >
-                  <div className="h-1 w-full bg-gradient-to-r from-accent-blue via-accent-cyan to-accent-purple opacity-50"></div>
-                  
-                  <div className="p-5">
-                    <div className="flex items-center gap-4 mb-6">
-                      <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center border border-white/10 shadow-inner">
-                        {isAuthenticated ? <Shield size={24} className="text-emerald-500" /> : <User size={24} className="text-accent-blue" />}
+                  <div className="p-4 border-b border-white/[0.06]">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-surface-3 border border-white/[0.08] flex items-center justify-center">
+                        {isAuthenticated ? <Shield size={16} className="text-accent-green" /> : <User size={16} className="text-slate-400" />}
                       </div>
                       <div>
-                        <h4 className="text-sm font-bold text-white tracking-tight">{user ? user.username : 'System Admin'}</h4>
-                        <p className="text-[10px] text-slate-500 font-mono uppercase tracking-widest">
-                          {user ? user.role : 'Unauthenticated'}
-                        </p>
+                        <p className="text-sm font-semibold text-white">{user?.username || 'System Admin'}</p>
+                        <p className="font-mono text-2xs text-slate-500 uppercase">{user?.role || 'Unauthenticated'}</p>
                       </div>
                     </div>
-
-                    <div className="space-y-2">
-                      {!isAuthenticated ? (
-                        <>
-                          <button 
-                            onClick={handleAuthClick}
-                            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl bg-accent-blue text-white font-bold text-sm hover:bg-accent-blue/90 transition-all shadow-[0_4px_15px_rgba(59,130,246,0.3)] group"
-                          >
-                            <LogIn size={16} />
-                            <span>Log In / Sign Up</span>
-                          </button>
-                          <button 
-                            onClick={() => { logout(); setIsProfileOpen(false); }}
-                            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl bg-white/5 border border-white/5 text-slate-400 font-bold text-sm hover:bg-white/10 transition-all"
-                          >
-                            <Ghost size={16} />
-                            <span>Stay as Guest</span>
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl bg-white/5 border border-white/5 text-slate-300 font-bold text-sm hover:bg-white/10 transition-all">
-                            <User size={16} className="text-accent-blue" />
-                            <span>Account Details</span>
-                          </button>
-                          <button 
-                            onClick={() => { logout(); setIsProfileOpen(false); }}
-                            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-500 font-bold text-sm hover:bg-rose-500/20 transition-all"
-                          >
-                            <LogOut size={16} />
-                            <span>Sign Out Node</span>
-                          </button>
-                        </>
-                      )}
-                    </div>
-
-                    <div className="mt-6 pt-4 border-t border-white/5 space-y-1">
-                      <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-500 hover:text-white hover:bg-white/5 transition-all">
-                        <Settings size={14} />
-                        <span>Profile Settings</span>
+                  </div>
+                  <div className="p-2 space-y-0.5">
+                    {!isAuthenticated ? (
+                      <>
+                        <button
+                          onClick={() => { setIsProfileOpen(false); setIsAuthModalOpen(true); }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-md bg-accent-blue text-white text-sm font-medium hover:bg-blue-500 transition-colors"
+                        >
+                          <LogIn size={14} />
+                          <span>Log In / Sign Up</span>
+                        </button>
+                        <button
+                          onClick={() => { logout(); setIsProfileOpen(false); }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-slate-400 text-sm hover:bg-white/[0.04] hover:text-slate-300 transition-colors"
+                        >
+                          <Ghost size={14} />
+                          <span>Continue as Guest</span>
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button className="w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-slate-400 text-sm hover:bg-white/[0.04] hover:text-slate-300 transition-colors">
+                          <User size={14} />
+                          <span>Account Details</span>
+                        </button>
+                        <button
+                          onClick={() => { logout(); setIsProfileOpen(false); }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-accent-red text-sm hover:bg-accent-red/5 transition-colors"
+                        >
+                          <LogOut size={14} />
+                          <span>Sign Out</span>
+                        </button>
+                      </>
+                    )}
+                    <div className="border-t border-white/[0.06] mt-1 pt-1">
+                      <button className="w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-slate-500 text-xs hover:bg-white/[0.04] hover:text-slate-400 transition-colors">
+                        <Settings size={13} />
+                        <span>Preferences</span>
                       </button>
                     </div>
                   </div>
@@ -169,10 +154,7 @@ const Navbar = () => {
         </div>
       </nav>
 
-      <AuthModal 
-        isOpen={isAuthModalOpen} 
-        onClose={() => setIsAuthModalOpen(false)} 
-      />
+      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
     </>
   );
 };

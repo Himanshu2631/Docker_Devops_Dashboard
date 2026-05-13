@@ -1,68 +1,114 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { 
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
-  BarChart, Bar, Cell, PieChart, Pie 
+import React, { useState, useEffect } from 'react';
+import {
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  BarChart, Bar, Cell, PieChart, Pie
 } from 'recharts';
-import { 
-  TrendingUp, Activity, Clock, Zap, Database, Server, 
-  Filter, Calendar, ChevronDown, BarChart3, PieChart as PieIcon, 
-  Info, AlertCircle, RefreshCw
+import {
+  TrendingUp, Activity, Clock, Zap, Database,
+  RefreshCw, Filter
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 
 /**
  * Analytics.jsx
- * -------------
- * Historical infrastructure observability platform.
- * Visualizes CPU, Memory, and Uptime trends using high-fidelity animated charts.
+ * Infrastructure telemetry & trend observability page.
+ * Design: operational, restrained, Grafana/Datadog-inspired.
  */
 
+// ─── Chart tooltip ──────────────────────────────────────────────────────────
+const ChartTooltip = ({ active, payload, label }) => {
+  if (!active || !payload?.length) return null;
+  const ts = label?.split('T')[1]?.substring(0, 5) ?? label ?? '—';
+  return (
+    <div className="bg-surface-1 border border-white/[0.08] rounded-lg p-3 shadow-xl">
+      <div className="text-2xs font-mono text-slate-600 mb-2 uppercase tracking-widest">{ts}</div>
+      {payload.map((entry, i) => (
+        <div key={i} className="flex items-center gap-2.5 py-0.5">
+          <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: entry.color }} />
+          <span className="text-2xs font-mono text-slate-500 uppercase">{entry.name}</span>
+          <span className="text-2xs font-mono text-slate-300 tabular-nums ml-auto pl-4">
+            {typeof entry.value === 'number' ? entry.value.toFixed(2) : entry.value}
+            {entry.name === 'CPU' ? '%' : ' MB'}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// ─── Panel card ─────────────────────────────────────────────────────────────
+const Panel = ({ title, subtitle, children, className = '' }) => (
+  <div className={`bg-surface-1 border border-white/[0.06] rounded-xl overflow-hidden ${className}`}>
+    <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.05]">
+      <div>
+        <span className="text-xs font-semibold text-white">{title}</span>
+        {subtitle && <span className="text-2xs font-mono text-slate-600 ml-2">{subtitle}</span>}
+      </div>
+    </div>
+    <div className="p-4">{children}</div>
+  </div>
+);
+
+// ─── Stat card ───────────────────────────────────────────────────────────────
+const StatCard = ({ label, value, sub, icon: Icon, color, delta }) => (
+  <div className="bg-surface-1 border border-white/[0.06] rounded-xl p-4 flex flex-col gap-3">
+    <div className="flex items-center justify-between">
+      <div className={`p-1.5 rounded-md bg-surface-2 ${color}`}>
+        <Icon size={13} />
+      </div>
+      {delta !== undefined && (
+        <span className={`text-2xs font-mono tabular-nums ${delta >= 0 ? 'text-accent-green' : 'text-accent-red'}`}>
+          {delta >= 0 ? '+' : ''}{delta}%
+        </span>
+      )}
+    </div>
+    <div>
+      <div className="text-2xs font-mono text-slate-600 uppercase tracking-widest mb-1">{label}</div>
+      <div className="text-xl font-semibold text-white tabular-nums tracking-tight">{value}</div>
+      {sub && <div className="text-2xs font-mono text-slate-700 mt-1">{sub}</div>}
+    </div>
+  </div>
+);
+
+// ─── Common axis/grid props ──────────────────────────────────────────────────
+const axisStyle = { fill: '#4b5563', fontSize: 10, fontFamily: 'JetBrains Mono, monospace' };
+const gridProps = { strokeDasharray: '3 6', stroke: 'rgba(255,255,255,0.04)', vertical: false };
+
+// ─── Main component ──────────────────────────────────────────────────────────
 const Analytics = ({ containers = [] }) => {
   const { api } = useAuth();
-  
-  const [range, setRange] = useState('24h');
+
+  const [range, setRange]                     = useState('24h');
   const [selectedContainer, setSelectedContainer] = useState('global');
-  const [trendData, setTrendData] = useState([]);
-  const [summary, setSummary] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [trendData, setTrendData]             = useState([]);
+  const [summary, setSummary]                 = useState(null);
+  const [loading, setLoading]                 = useState(true);
+  const [isRefreshing, setIsRefreshing]       = useState(false);
+  const [lastFetched, setLastFetched]         = useState(null);
 
   const fetchAnalytics = async () => {
     setIsRefreshing(true);
     try {
-      // Fetch Trends
-      const trendRes = await api.get(`/analytics/trends`, {
-        params: { 
+      const trendRes = await api.get('/analytics/trends', {
+        params: {
           containerId: selectedContainer === 'global' ? undefined : selectedContainer,
           range,
           interval: range === '1h' ? '1m' : '1h'
         }
       });
-      
-      if (trendRes.data.success) {
-        setTrendData(trendRes.data.data);
-      }
+      if (trendRes.data.success) setTrendData(trendRes.data.data);
 
-      // Fetch Summary if container selected, else calculate global
       if (selectedContainer !== 'global') {
-        const summaryRes = await api.get(`/analytics/summary/${selectedContainer}`, {
-          params: { range }
-        });
-        if (summaryRes.data.success) {
-          setSummary(summaryRes.data.summary);
-        }
+        const summaryRes = await api.get(`/analytics/summary/${selectedContainer}`, { params: { range } });
+        if (summaryRes.data.success) setSummary(summaryRes.data.summary);
       } else {
-        // Calculate global summary from current containers and trends
-        const avgCpu = trendData.reduce((acc, curr) => acc + curr.cpu, 0) / (trendData.length || 1);
-        const avgMem = trendData.reduce((acc, curr) => acc + curr.memory, 0) / (trendData.length || 1);
-        setSummary({
-          avgCpu: avgCpu.toFixed(2),
-          avgMem: avgMem.toFixed(2),
-          uptimePercentage: 100, // Placeholder for global
-          dataPoints: trendData.length
-        });
+        const td = trendRes.data.data ?? [];
+        const avgCpu = td.reduce((a, c) => a + c.cpu, 0) / (td.length || 1);
+        const avgMem = td.reduce((a, c) => a + c.memory, 0) / (td.length || 1);
+        setSummary({ avgCpu: avgCpu.toFixed(2), avgMem: avgMem.toFixed(2), uptimePercentage: 100, dataPoints: td.length });
       }
+      setLastFetched(new Date());
     } catch (err) {
       console.error('Failed to fetch analytics:', err);
     } finally {
@@ -71,239 +117,291 @@ const Analytics = ({ containers = [] }) => {
     }
   };
 
-  useEffect(() => {
-    fetchAnalytics();
-  }, [range, selectedContainer]);
+  useEffect(() => { fetchAnalytics(); }, [range, selectedContainer]);
 
-  const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-[#1a1a20]/95 backdrop-blur-2xl border border-white/10 p-4 rounded-2xl shadow-2xl">
-          <div className="text-[10px] text-slate-500 font-mono mb-2 uppercase tracking-widest">{label}</div>
-          {payload.map((entry, index) => (
-            <div key={index} className="flex items-center gap-3 py-1">
-              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
-              <span className="text-xs font-black text-white uppercase">{entry.name}:</span>
-              <span className="text-xs font-mono text-white/80 ml-auto">{entry.value}{entry.name === 'CPU' ? '%' : ' MB'}</span>
-            </div>
-          ))}
-        </div>
-      );
-    }
-    return null;
-  };
+  const uptimePct  = parseFloat(summary?.uptimePercentage ?? 100);
+  const pieData    = [
+    { name: 'Uptime',   value: uptimePct },
+    { name: 'Downtime', value: Math.max(0, 100 - uptimePct) }
+  ];
 
-  const Card = ({ children, title, icon: Icon, className = "" }) => (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className={`bg-[#0c0c0e]/60 backdrop-blur-3xl border border-white/5 rounded-[32px] p-8 shadow-2xl relative overflow-hidden group ${className}`}
-    >
-      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-accent-blue/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-white/5 rounded-2xl text-accent-blue border border-white/5 group-hover:border-accent-blue/30 transition-colors">
-            <Icon size={20} />
-          </div>
-          <h3 className="text-sm font-black text-white uppercase tracking-[0.2em]">{title}</h3>
-        </div>
-        <div className="flex gap-1">
-          {[1, 2, 3].map(i => <div key={i} className="w-1 h-1 rounded-full bg-white/10" />)}
-        </div>
-      </div>
-      {children}
-    </motion.div>
-  );
+  const fmtTs = (t) => t?.split('T')[1]?.substring(0, 5) ?? t ?? '';
 
   return (
-    <div className="space-y-8 pb-20">
-      {/* Header & Filters */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.18 }}
+      className="space-y-5 pb-16"
+    >
+      {/* ── Page header ── */}
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-black text-white tracking-tighter uppercase italic flex items-center gap-4">
-            Analytics <span className="text-accent-blue opacity-50 font-light">Engine</span>
-            <div className={`p-2 rounded-xl bg-accent-blue/10 text-accent-blue border border-accent-blue/20 text-xs not-italic tracking-normal font-bold ${isRefreshing ? 'animate-spin' : ''}`}>
-              <RefreshCw size={14} />
-            </div>
-          </h1>
-          <p className="text-slate-500 text-xs font-mono mt-2 uppercase tracking-[0.3em]">Historical infrastructure telemetry & trend analysis</p>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="px-1.5 py-0.5 bg-accent-blue/10 text-accent-blue text-2xs font-semibold rounded border border-accent-blue/20 uppercase tracking-widest">
+              Analytics
+            </span>
+            <span className="text-slate-600 text-2xs font-mono">/ telemetry</span>
+          </div>
+          <h1 className="text-xl font-semibold text-white tracking-tight">Resource Telemetry</h1>
         </div>
 
-        <div className="flex flex-wrap items-center gap-4 bg-white/5 p-2 rounded-[24px] border border-white/5 backdrop-blur-xl">
-          <div className="flex items-center gap-2 px-4 border-r border-white/10 mr-2">
-            <Filter size={14} className="text-accent-blue" />
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Filters</span>
+        {/* Controls */}
+        <div className="flex items-center gap-2 flex-wrap justify-end">
+          {/* Container selector */}
+          <div className="flex items-center gap-1.5 bg-surface-1 border border-white/[0.06] rounded-md px-2 py-1.5">
+            <Filter size={11} className="text-slate-600" />
+            <select
+              value={selectedContainer}
+              onChange={e => setSelectedContainer(e.target.value)}
+              className="bg-transparent border-none outline-none text-2xs font-mono text-slate-400 cursor-pointer"
+            >
+              <option value="global">global</option>
+              {containers.map(c => (
+                <option key={c.Id} value={c.Id}>{c.Names[0].replace('/', '')}</option>
+              ))}
+            </select>
           </div>
-          
-          {/* Container Selector */}
-          <select 
-            value={selectedContainer}
-            onChange={(e) => setSelectedContainer(e.target.value)}
-            className="bg-black/40 text-[11px] text-white font-bold py-2.5 px-4 rounded-xl border border-white/5 outline-none hover:border-white/20 transition-all cursor-pointer uppercase tracking-wider min-w-[180px]"
-          >
-            <option value="global">Global Infrastructure</option>
-            {containers.map(c => (
-              <option key={c.Id} value={c.Id}>{c.Names[0].replace('/', '')}</option>
-            ))}
-          </select>
 
-          {/* Range Selector */}
-          <div className="flex bg-black/40 p-1 rounded-xl border border-white/5">
-            {['1h', '24h', '7d', '30d'].map((r) => (
+          {/* Range selector */}
+          <div className="flex items-center gap-0.5 bg-surface-1 border border-white/[0.06] rounded-md p-0.5">
+            {['1h', '24h', '7d', '30d'].map(r => (
               <button
                 key={r}
                 onClick={() => setRange(r)}
-                className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${range === r ? 'bg-accent-blue text-white shadow-lg shadow-accent-blue/20' : 'text-slate-500 hover:text-white'}`}
+                className={`px-2.5 py-1 rounded text-2xs font-mono tracking-wide transition-all duration-100 ${
+                  range === r ? 'bg-accent-blue/15 text-accent-blue' : 'text-slate-600 hover:text-slate-400'
+                }`}
               >
                 {r}
               </button>
             ))}
           </div>
+
+          {/* Refresh */}
+          <button
+            onClick={fetchAnalytics}
+            disabled={isRefreshing}
+            className="p-1.5 bg-surface-1 border border-white/[0.06] rounded-md text-slate-500 hover:text-slate-300 transition-colors disabled:opacity-40"
+          >
+            <RefreshCw size={12} className={isRefreshing ? 'animate-spin' : ''} />
+          </button>
         </div>
       </div>
 
-      {/* Summary Row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Metadata strip */}
+      <div className="flex items-center gap-0 border border-white/[0.06] rounded-lg bg-surface-1/50 divide-x divide-white/[0.06] overflow-hidden w-fit">
         {[
-          { label: 'Avg CPU Load', value: `${summary?.avgCpu || 0}%`, icon: Zap, color: 'text-accent-cyan', sub: 'Calculated Trend' },
-          { label: 'Peak Memory', value: `${summary?.peakMem || summary?.avgMem || 0} MB`, icon: Database, color: 'text-accent-purple', sub: 'Max Threshold' },
-          { label: 'Uptime Score', value: `${summary?.uptimePercentage || 0}%`, icon: Activity, color: 'text-emerald-500', sub: 'Availability' },
-          { label: 'Data Snapshots', value: summary?.dataPoints || 0, icon: Clock, color: 'text-orange-500', sub: 'Capture Points' }
-        ].map((item, idx) => (
-          <motion.div
-            key={idx}
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: idx * 0.1 }}
-            className="bg-[#0c0c0e]/60 backdrop-blur-3xl border border-white/5 p-6 rounded-[32px] group hover:border-white/10 transition-all"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className={`p-3 rounded-2xl bg-white/5 ${item.color} group-hover:scale-110 transition-transform`}>
-                <item.icon size={20} />
-              </div>
-              <TrendingUp size={14} className="text-emerald-500 opacity-50" />
-            </div>
-            <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{item.label}</div>
-            <div className="text-3xl font-black text-white mt-1 tracking-tighter italic">{item.value}</div>
-            <div className="text-[9px] text-slate-600 font-mono mt-2 uppercase tracking-tighter">{item.sub}</div>
-          </motion.div>
+          { k: 'Scope',    v: selectedContainer === 'global' ? 'global' : containers.find(c => c.Id === selectedContainer)?.Names[0]?.replace('/', '') ?? selectedContainer },
+          { k: 'Range',    v: range },
+          { k: 'Interval', v: range === '1h' ? '1 min' : '1 hr' },
+          { k: 'Snapshots',v: summary?.dataPoints ?? '—' },
+          { k: 'Updated',  v: lastFetched ? lastFetched.toLocaleTimeString() : '—' },
+        ].map(({ k, v }) => (
+          <div key={k} className="px-3 py-1.5 flex items-center gap-2">
+            <span className="text-2xs text-slate-600 font-mono uppercase">{k}</span>
+            <span className="text-2xs text-slate-400 font-mono tabular-nums">{v}</span>
+          </div>
         ))}
       </div>
 
-      {/* Main Trends Chart */}
-      <Card title="Resource Utilization Trends" icon={TrendingUp} className="lg:col-span-2">
-        <div className="h-[400px] w-full mt-4">
+      {/* ── Stat cards ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <StatCard
+          label="Avg CPU"
+          value={`${summary?.avgCpu ?? 0}%`}
+          sub="rolling average"
+          icon={Zap}
+          color="text-accent-cyan"
+        />
+        <StatCard
+          label="Peak Memory"
+          value={`${summary?.peakMem ?? summary?.avgMem ?? 0} MB`}
+          sub="max threshold"
+          icon={Database}
+          color="text-purple-400"
+        />
+        <StatCard
+          label="Availability"
+          value={`${summary?.uptimePercentage ?? 0}%`}
+          sub="uptime score"
+          icon={Activity}
+          color="text-accent-green"
+        />
+        <StatCard
+          label="Snapshots"
+          value={summary?.dataPoints ?? 0}
+          sub={`captured · ${range}`}
+          icon={Clock}
+          color="text-amber-400"
+        />
+      </div>
+
+      {/* ── Section label ── */}
+      <div className="flex items-center gap-3">
+        <span className="text-2xs font-mono text-slate-600 uppercase tracking-widest">Resource Utilization</span>
+        <div className="flex-1 h-px bg-white/[0.05]" />
+        <span className="text-2xs font-mono text-slate-700">{range} window · {trendData.length} pts</span>
+      </div>
+
+      {/* ── Area chart ── */}
+      <Panel title="CPU & Memory Trend" subtitle={`last ${range}`}>
+        <div className="h-64 w-full">
           {loading ? (
-            <div className="h-full w-full flex items-center justify-center text-slate-600 font-mono animate-pulse">Initializing Data Stream...</div>
+            <div className="h-full flex items-center justify-center">
+              <span className="text-2xs font-mono text-slate-600 animate-pulse">loading telemetry…</span>
+            </div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={trendData}>
+              <AreaChart data={trendData} margin={{ top: 4, right: 4, bottom: 0, left: -16 }}>
                 <defs>
-                  <linearGradient id="colorCpu" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#06b6d4" stopOpacity={0}/>
+                  <linearGradient id="gradCpu" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%"   stopColor="#22d3ee" stopOpacity={0.18} />
+                    <stop offset="100%" stopColor="#22d3ee" stopOpacity={0} />
                   </linearGradient>
-                  <linearGradient id="colorMem" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#a855f7" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#a855f7" stopOpacity={0}/>
+                  <linearGradient id="gradMem" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%"   stopColor="#a78bfa" stopOpacity={0.18} />
+                    <stop offset="100%" stopColor="#a78bfa" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
-                <XAxis 
-                  dataKey="timestamp" 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fill: '#475569', fontSize: 10, fontBold: '900' }}
-                  tickFormatter={(t) => t.split('T')[1]?.substring(0, 5) || t}
+                <CartesianGrid {...gridProps} />
+                <XAxis
+                  dataKey="timestamp"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={axisStyle}
+                  tickFormatter={fmtTs}
+                  interval="preserveStartEnd"
                 />
-                <YAxis 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fill: '#475569', fontSize: 10, fontBold: '900' }}
-                />
-                <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#ffffff10', strokeWidth: 1 }} />
-                <Area 
+                <YAxis axisLine={false} tickLine={false} tick={axisStyle} width={36} />
+                <Tooltip content={<ChartTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.06)', strokeWidth: 1 }} />
+                <Area
                   name="CPU"
-                  type="monotone" 
-                  dataKey="cpu" 
-                  stroke="#06b6d4" 
-                  strokeWidth={3}
-                  fillOpacity={1} 
-                  fill="url(#colorCpu)" 
-                  animationDuration={2000}
+                  type="monotone"
+                  dataKey="cpu"
+                  stroke="#22d3ee"
+                  strokeWidth={1.5}
+                  fill="url(#gradCpu)"
+                  dot={false}
+                  activeDot={{ r: 3, fill: '#22d3ee', strokeWidth: 0 }}
+                  animationDuration={800}
                 />
-                <Area 
+                <Area
                   name="Memory"
-                  type="monotone" 
-                  dataKey="memory" 
-                  stroke="#a855f7" 
-                  strokeWidth={3}
-                  fillOpacity={1} 
-                  fill="url(#colorMem)" 
-                  animationDuration={2000}
+                  type="monotone"
+                  dataKey="memory"
+                  stroke="#a78bfa"
+                  strokeWidth={1.5}
+                  fill="url(#gradMem)"
+                  dot={false}
+                  activeDot={{ r: 3, fill: '#a78bfa', strokeWidth: 0 }}
+                  animationDuration={800}
                 />
               </AreaChart>
             </ResponsiveContainer>
           )}
         </div>
-      </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Availability Analytics */}
-        <Card title="Infrastructure Health" icon={Activity}>
-          <div className="flex items-center justify-center h-[250px]">
+        {/* Chart legend */}
+        <div className="flex items-center gap-5 mt-3 pt-3 border-t border-white/[0.04]">
+          {[
+            { label: 'CPU Load',  color: '#22d3ee' },
+            { label: 'Memory',    color: '#a78bfa' },
+          ].map(({ label, color }) => (
+            <div key={label} className="flex items-center gap-1.5">
+              <span className="w-4 h-px inline-block rounded-full" style={{ backgroundColor: color, opacity: 0.7 }} />
+              <span className="text-2xs font-mono text-slate-600">{label}</span>
+            </div>
+          ))}
+          <span className="ml-auto text-2xs font-mono text-slate-700">interval: {range === '1h' ? '1 min' : '1 hr'}</span>
+        </div>
+      </Panel>
+
+      {/* ── Secondary charts ── */}
+      <div className="flex items-center gap-3">
+        <span className="text-2xs font-mono text-slate-600 uppercase tracking-widest">Distribution & Availability</span>
+        <div className="flex-1 h-px bg-white/[0.05]" />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+        {/* Availability donut */}
+        <Panel title="Availability" subtitle="uptime breakdown">
+          <div className="relative flex items-center justify-center h-52">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={[
-                    { name: 'Uptime', value: parseFloat(summary?.uptimePercentage || 100) },
-                    { name: 'Downtime', value: 100 - parseFloat(summary?.uptimePercentage || 100) }
-                  ]}
-                  innerRadius={60}
-                  outerRadius={100}
-                  paddingAngle={5}
+                  data={pieData}
+                  innerRadius={58}
+                  outerRadius={80}
+                  paddingAngle={3}
                   dataKey="value"
-                  animationDuration={1500}
+                  startAngle={90}
+                  endAngle={-270}
+                  animationDuration={700}
                 >
-                  <Cell fill="#10b981" stroke="none" />
-                  <Cell fill="#f43f5e" stroke="none" />
+                  <Cell fill="#22c55e" stroke="none" />
+                  <Cell fill="#1f1f26" stroke="none" />
                 </Pie>
-                <Tooltip />
+                <Tooltip
+                  content={({ active, payload }) =>
+                    active && payload?.length ? (
+                      <div className="bg-surface-1 border border-white/[0.08] rounded-lg px-3 py-2">
+                        <span className="text-2xs font-mono text-slate-400">{payload[0].name}: </span>
+                        <span className="text-2xs font-mono text-white tabular-nums">{payload[0].value.toFixed(1)}%</span>
+                      </div>
+                    ) : null
+                  }
+                />
               </PieChart>
             </ResponsiveContainer>
-            <div className="absolute flex flex-col items-center">
-              <div className="text-3xl font-black text-white italic">{summary?.uptimePercentage || 100}%</div>
-              <div className="text-[8px] text-slate-500 uppercase tracking-widest font-black">Availability</div>
+            {/* Center label */}
+            <div className="absolute flex flex-col items-center pointer-events-none">
+              <span className="text-2xl font-semibold text-white tabular-nums">{uptimePct.toFixed(1)}%</span>
+              <span className="text-2xs font-mono text-slate-600 mt-0.5">availability</span>
             </div>
           </div>
-          <div className="flex justify-center gap-8 mt-4">
-            <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-emerald-500" /><span className="text-[10px] text-slate-400 font-black uppercase">Active Time</span></div>
-            <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-rose-500" /><span className="text-[10px] text-slate-400 font-black uppercase">Critical Failures</span></div>
-          </div>
-        </Card>
 
-        {/* Load Distribution */}
-        <Card title="Resource Distribution" icon={BarChart3}>
-          <div className="h-[250px] mt-4">
-             <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={trendData.slice(-10)}>
-                  <XAxis hide />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Bar dataKey="cpu" radius={[4, 4, 0, 0]}>
-                    {trendData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.cpu > 15 ? '#f43f5e' : '#3b82f6'} opacity={0.6} />
-                    ))}
-                  </Bar>
-                </BarChart>
-             </ResponsiveContainer>
+          <div className="flex justify-center gap-6 pt-3 border-t border-white/[0.04]">
+            {[
+              { label: 'Uptime',   color: '#22c55e' },
+              { label: 'Downtime', color: '#374151' },
+            ].map(({ label, color }) => (
+              <div key={label} className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+                <span className="text-2xs font-mono text-slate-600">{label}</span>
+              </div>
+            ))}
           </div>
-          <p className="text-[9px] text-slate-600 font-mono text-center uppercase tracking-tighter mt-4">Snapshot analysis of recent peak loads across the cluster</p>
-        </Card>
+        </Panel>
+
+        {/* CPU distribution bar chart */}
+        <Panel title="CPU Distribution" subtitle="last 10 snapshots">
+          <div className="h-52">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={trendData.slice(-10)} margin={{ top: 4, right: 4, bottom: 0, left: -16 }} barSize={14}>
+                <CartesianGrid {...gridProps} />
+                <XAxis hide />
+                <YAxis axisLine={false} tickLine={false} tick={axisStyle} width={36} />
+                <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
+                <Bar dataKey="cpu" name="CPU" radius={[2, 2, 0, 0]} animationDuration={600}>
+                  {trendData.slice(-10).map((entry, i) => (
+                    <Cell
+                      key={i}
+                      fill={entry.cpu > 15 ? '#f43f5e' : '#3b82f6'}
+                      opacity={0.55}
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <p className="text-2xs font-mono text-slate-700 mt-3 pt-3 border-t border-white/[0.04]">
+            red bars indicate cpu &gt; 15% threshold · 10-sample window
+          </p>
+        </Panel>
       </div>
-
-      {/* Decorative Scanline/CRT effect */}
-      <div className="fixed inset-0 pointer-events-none z-[100] opacity-[0.03] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_2px,3px_100%]" />
-    </div>
+    </motion.div>
   );
 };
 

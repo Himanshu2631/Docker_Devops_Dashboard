@@ -1,122 +1,164 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Filter, Plus, RefreshCw, Shield } from 'lucide-react';
+import { Search, RefreshCw, Plus, Shield } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import ContainerList from '../components/ContainerList';
+import { cn } from '../lib/utils';
 
-const ContainersView = ({ 
-  containers, 
-  loading, 
-  error, 
-  isUpdating, 
-  onAction, 
-  onLogs, 
-  onStats, 
-  onRefresh 
+/**
+ * ContainersView.jsx
+ * Operational container management workspace.
+ */
+
+const ContainersView = ({
+  containers,
+  loading,
+  error,
+  isUpdating,
+  onAction,
+  onLogs,
+  onStats,
+  onRefresh,
 }) => {
   const { user } = useAuth();
   const isGuest = user?.role === 'guest';
+  const [filter, setFilter] = useState('');
+
+  const filtered = Array.isArray(containers)
+    ? containers.filter(c => {
+        if (!filter) return true;
+        const q = filter.toLowerCase();
+        const name = (c.Names?.[0] ?? '').toLowerCase();
+        return name.includes(q) || c.Image?.toLowerCase().includes(q) || c.Id?.toLowerCase().includes(q);
+      })
+    : [];
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      transition={{ duration: 0.3 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.18 }}
     >
-      {/* Header Section */}
-      <div className="mb-10 flex items-end justify-between">
+      {/* Page header */}
+      <div className="mb-5 flex items-center justify-between">
         <div>
-          <div className="flex items-center gap-2 mb-2">
-            <span className="px-2 py-0.5 bg-accent-cyan/10 text-accent-cyan text-[10px] font-bold rounded uppercase tracking-widest border border-accent-cyan/20">Orchestration</span>
-            <span className="text-slate-600 text-xs font-mono">Management Workspace</span>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="px-1.5 py-0.5 bg-accent-cyan/10 text-accent-cyan text-2xs font-semibold rounded border border-accent-cyan/20 uppercase tracking-widest">Containers</span>
+            <span className="text-slate-600 text-2xs font-mono">/ management</span>
           </div>
-          <h1 className="text-4xl font-bold text-white mb-2 tracking-tight">Container <span className="text-slate-500 font-light">Management</span></h1>
-          <p className="text-slate-500 text-sm">Deploy, monitor, and manage your container instances.</p>
+          <h1 className="text-xl font-semibold text-white tracking-tight">Container Management</h1>
         </div>
 
-        <div className="flex items-center gap-3">
-          <button 
+        <div className="flex items-center gap-2">
+          <button
             onClick={onRefresh}
             disabled={isUpdating}
-            className={`p-2.5 bg-white/5 border border-white/5 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-all ${isUpdating ? 'animate-spin' : ''}`}
-            title="Refresh List"
+            title="Refresh"
+            className={cn(
+              'p-1.5 rounded-md border border-white/[0.06] bg-surface-1',
+              'text-slate-500 hover:text-slate-300 hover:border-white/[0.12]',
+              'transition-colors duration-[120ms] disabled:opacity-40'
+            )}
           >
-            <RefreshCw size={20} />
+            <RefreshCw
+              size={14}
+              className={cn('transition-transform', isUpdating && 'animate-spin')}
+            />
           </button>
-          <button 
+
+          <button
             disabled={isGuest}
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all ${isGuest ? 'bg-slate-800 text-slate-500 cursor-not-allowed opacity-50' : 'bg-accent-blue text-white hover:bg-accent-blue/90 shadow-[0_0_20px_rgba(59,130,246,0.3)] hover:shadow-[0_0_25px_rgba(59,130,246,0.5)]'}`}
+            className={cn(
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium border',
+              'transition-colors duration-[120ms]',
+              isGuest
+                ? 'border-white/[0.05] bg-surface-1 text-slate-600 cursor-not-allowed'
+                : 'border-accent-blue/30 bg-accent-blue/10 text-accent-blue hover:bg-accent-blue/15 hover:border-accent-blue/40 active:scale-[0.98]'
+            )}
           >
-            <Plus size={18} />
-            <span>Deploy Container</span>
+            <Plus size={13} />
+            <span>Deploy</span>
           </button>
         </div>
       </div>
 
+      {/* Guest warning — compact */}
       {isGuest && (
-        <motion.div 
-          initial={{ opacity: 0, y: -10 }}
+        <motion.div
+          initial={{ opacity: 0, y: -4 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8 p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-center gap-3 text-amber-500 text-xs"
+          className="mb-4 flex items-center gap-2.5 px-3 py-2 bg-amber-500/8 border border-amber-500/15 rounded-lg text-2xs text-amber-600"
         >
-          <Shield size={16} />
-          <span><strong>GUEST MODE ACTIVE:</strong> Destructive actions (Stop, Delete) are disabled. Log in for full orchestration permissions.</span>
+          <Shield size={12} className="shrink-0" />
+          <span><strong className="font-semibold">Guest mode:</strong> Destructive actions disabled. Log in for full access.</span>
         </motion.div>
       )}
 
-      {/* Search & Filter Bar */}
-      <div className="bg-[#111114]/40 backdrop-blur-xl border border-white/5 rounded-2xl p-4 mb-8 flex flex-col md:flex-row gap-4 items-center">
-        <div className="relative flex-1 group">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-accent-blue transition-colors" size={18} />
-          <input 
-            type="text" 
-            placeholder="Filter containers by name, image, or ID..."
-            className="w-full bg-white/5 border border-white/5 rounded-xl py-2.5 pl-12 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue/20 focus:border-accent-blue/30 transition-all placeholder:text-slate-600"
+      {/* Toolbar — inline, not boxed */}
+      <div className="flex items-center gap-3 mb-5">
+        <div className="relative flex-1 max-w-sm group">
+          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-600 group-focus-within:text-slate-400 transition-colors duration-[100ms]" />
+          <input
+            type="text"
+            value={filter}
+            onChange={e => setFilter(e.target.value)}
+            placeholder="Filter by name, image, or ID…"
+            className={cn(
+              'w-full card-sm py-1.5 pl-8 pr-3 text-sm',
+              'text-slate-300 placeholder:text-slate-600',
+              'focus:outline-none focus:border-white/[0.12] focus:bg-surface-2',
+              'transition-colors duration-[120ms]'
+            )}
           />
         </div>
-        <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2.5 bg-white/5 border border-white/5 rounded-xl text-slate-400 hover:text-white transition-all text-sm font-medium">
-            <Filter size={16} />
-            <span>Filter Status</span>
-          </button>
-          <div className="h-8 w-[1px] bg-white/5 mx-2 hidden md:block"></div>
-          <div className="text-xs font-mono text-slate-500">
-            TOTAL: <span className="text-white">{containers.length}</span>
-          </div>
-        </div>
-      </div>
 
-      {/* Main Grid */}
-      <div className="relative">
-        {loading && !isUpdating ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {[1, 2, 3, 4, 5, 6].map(i => (
-              <div key={i} className="bg-[#111114]/40 backdrop-blur-xl border border-white/5 rounded-2xl h-64 animate-pulse"></div>
-            ))}
-          </div>
-        ) : error ? (
-          <div className="bg-rose-500/10 border border-rose-500/20 rounded-2xl p-12 text-center">
-            <p className="text-rose-500 font-bold mb-2">SYSTEM ERROR</p>
-            <p className="text-slate-400 text-sm mb-6">{error}</p>
-            <button onClick={onRefresh} className="px-6 py-2 bg-rose-500/20 text-rose-500 rounded-xl border border-rose-500/30 hover:bg-rose-500 hover:text-white transition-all">
-              Reconnect to Host
-            </button>
-          </div>
-        ) : (
-          <ContainerList 
-            containers={containers} 
-            onAction={(id, action) => {
-              if (isGuest && (action === 'stop' || action === 'delete' || action === 'restart')) {
-                alert('Action Denied: Guests cannot modify infrastructure state.');
-                return;
-              }
-              onAction(id, action);
-            }} 
-            onLogs={onLogs} 
-            onStats={onStats} 
-          />
+        <div className="h-4 w-px bg-white/[0.06]" />
+        <span className="font-mono text-2xs text-slate-600 tabular-nums">
+          {filtered.length}/{containers?.length ?? 0} containers
+        </span>
+        {filter && (
+          <button
+            onClick={() => setFilter('')}
+            className="text-2xs text-slate-600 hover:text-slate-400 transition-colors duration-[100ms]"
+          >
+            clear
+          </button>
         )}
       </div>
+
+      {/* Content */}
+      {loading && !isUpdating ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="skeleton h-44" style={{ animationDelay: `${i * 0.1}s` }} />
+          ))}
+        </div>
+      ) : error ? (
+        <div className="card p-10 text-center">
+          <p className="text-accent-red text-sm font-semibold mb-1">Connection Error</p>
+          <p className="text-slate-500 text-sm mb-5">{error}</p>
+          <button
+            onClick={onRefresh}
+            className="px-4 py-1.5 rounded-md border border-accent-red/20 bg-accent-red/8 text-accent-red text-sm hover:bg-accent-red/12 transition-colors duration-[120ms]"
+          >
+            Retry
+          </button>
+        </div>
+      ) : (
+        <ContainerList
+          containers={filtered}
+          onAction={(id, action) => {
+            if (isGuest && ['stop', 'delete', 'restart'].includes(action)) {
+              alert('Action denied: Guests cannot modify container state.');
+              return;
+            }
+            onAction(id, action);
+          }}
+          onLogs={onLogs}
+          onStats={onStats}
+        />
+      )}
     </motion.div>
   );
 };

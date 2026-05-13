@@ -1,177 +1,212 @@
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { motion } from 'framer-motion';
-import { Cpu, Database, Activity, Server } from 'lucide-react';
+import { 
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, 
+  Tooltip, ResponsiveContainer, ReferenceLine,
+  ComposedChart, Line
+} from 'recharts';
+import { Cpu, Database, Activity, Wifi } from 'lucide-react';
+
+/**
+ * MonitoringDashboard.jsx
+ * Telemetry charts with Grafana-style axis labels, reference lines,
+ * and compact metadata rows.
+ */
+
+const ChartTooltip = ({ active, payload, label }) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="bg-surface-2 border border-white/[0.08] rounded-md px-3 py-2 text-2xs shadow-lg">
+      <p className="font-mono text-slate-500 mb-1">{label}</p>
+      {payload.map((p, i) => (
+        <div key={i} className="flex items-center gap-2">
+          <span className="w-1.5 h-1.5 rounded-full" style={{ background: p.color }} />
+          <span className="text-slate-400 capitalize">{p.name}:</span>
+          <span className="font-mono text-white">{typeof p.value === 'number' ? p.value.toFixed(1) : p.value}{p.name === 'cpu' ? '%' : p.name === 'memory' ? 'MB' : ''}</span>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const MetaRow = ({ label, value, accent = 'text-slate-300' }) => (
+  <div className="flex items-center justify-between py-1 border-b border-white/[0.04] last:border-0">
+    <span className="text-2xs text-slate-600 font-mono uppercase">{label}</span>
+    <span className={`text-2xs font-mono font-medium ${accent} tabular-nums`}>{value}</span>
+  </div>
+);
 
 const MonitoringDashboard = ({ data = [] }) => {
+  const latest = data[data.length - 1] || {};
+  const cpuValues = data.map(d => d.cpu || 0).filter(Boolean);
+  const memValues = data.map(d => d.memory || 0).filter(Boolean);
+  const avgCpu = cpuValues.length ? (cpuValues.reduce((a, b) => a + b, 0) / cpuValues.length).toFixed(1) : '—';
+  const peakCpu = cpuValues.length ? Math.max(...cpuValues).toFixed(1) : '—';
+  const avgMem = memValues.length ? (memValues.reduce((a, b) => a + b, 0) / memValues.length).toFixed(0) : '—';
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
-      {/* CPU Usage Live Chart */}
-      <motion.div 
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        className="bg-[#111114]/40 backdrop-blur-xl border border-white/5 rounded-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] bg-gradient-to-br from-white/[0.05] to-transparent p-6"
-      >
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-500/10 rounded-lg">
-              <Cpu size={20} className="text-blue-500" />
-            </div>
-            <div>
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider">System CPU Load</h3>
-              <p className="text-[10px] text-slate-500">Real-time aggregate across all nodes</p>
-            </div>
-          </div>
-          <div className="text-right">
-            <span className="text-2xl font-mono text-blue-500 font-bold">42.8%</span>
-          </div>
-        </div>
-        
-        <div className="h-[200px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data}>
-              <defs>
-                <linearGradient id="colorCpu" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
-              <XAxis dataKey="time" hide />
-              <YAxis hide domain={[0, 100]} />
-              <Tooltip 
-                contentStyle={{ backgroundColor: '#111114', border: '1px solid #ffffff10', borderRadius: '8px' }}
-                itemStyle={{ color: '#3b82f6' }}
-              />
-              <Area 
-                type="monotone" 
-                dataKey="cpu" 
-                stroke="#3b82f6" 
-                strokeWidth={2}
-                fillOpacity={1} 
-                fill="url(#colorCpu)" 
-                isAnimationActive={true}
-                animationDuration={1500}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      </motion.div>
-
-      {/* Memory Usage Live Chart */}
-      <motion.div 
-        initial={{ opacity: 0, x: 20 }}
-        animate={{ opacity: 1, x: 0 }}
-        className="bg-[#111114]/40 backdrop-blur-xl border border-white/5 rounded-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] bg-gradient-to-br from-white/[0.05] to-transparent p-6"
-      >
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-purple-500/10 rounded-lg">
-              <Database size={20} className="text-purple-500" />
-            </div>
-            <div>
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider">Memory Pressure</h3>
-              <p className="text-[10px] text-slate-500">Active memory allocation (RSS)</p>
-            </div>
-          </div>
-          <div className="text-right">
-            <span className="text-2xl font-mono text-purple-500 font-bold">5.2 GB</span>
-          </div>
-        </div>
-        
-        <div className="h-[200px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data}>
-              <defs>
-                <linearGradient id="colorMem" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
-              <XAxis dataKey="time" hide />
-              <YAxis hide domain={[0, 100]} />
-              <Tooltip 
-                contentStyle={{ backgroundColor: '#111114', border: '1px solid #ffffff10', borderRadius: '8px' }}
-                itemStyle={{ color: '#8b5cf6' }}
-              />
-              <Area 
-                type="monotone" 
-                dataKey="memory" 
-                stroke="#8b5cf6" 
-                strokeWidth={2}
-                fillOpacity={1} 
-                fill="url(#colorMem)" 
-                isAnimationActive={true}
-                animationDuration={1500}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      </motion.div>
+    <div className="space-y-3">
       
-      {/* Active Containers Trend */}
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-[#111114]/40 backdrop-blur-xl border border-white/5 rounded-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] bg-gradient-to-br from-white/[0.05] to-transparent p-6"
-      >
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-2 bg-cyan-500/10 rounded-lg">
-            <Activity size={20} className="text-cyan-500" />
+      {/* === PRIMARY: CPU + Memory combined === */}
+      <div className="card p-0 overflow-hidden">
+        {/* Chart header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.05]">
+          <div className="flex items-center gap-3">
+            <Cpu size={13} className="text-slate-500" />
+            <span className="text-xs font-medium text-white">Resource Utilization</span>
+            <span className="text-2xs font-mono text-slate-600">— rolling 20 samples</span>
           </div>
-          <div>
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider">Containers Trend</h3>
-            <p className="text-[10px] text-slate-500">Running instances over time</p>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-0.5 bg-accent-blue rounded" />
+              <span className="text-2xs text-slate-500">CPU</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-0.5 bg-accent-purple rounded" />
+              <span className="text-2xs text-slate-500">MEM</span>
+            </div>
+            <div className="h-3 w-px bg-white/[0.06]" />
+            <span className="font-mono text-xs text-accent-blue font-medium tabular-nums">
+              {latest.cpu != null ? `${latest.cpu.toFixed(1)}%` : '—'}
+            </span>
           </div>
         </div>
-        
-        <div className="h-[150px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data}>
-              <Area 
-                type="stepAfter" 
-                dataKey="containers" 
-                stroke="#06b6d4" 
-                strokeWidth={2}
-                fill="#06b6d4" 
-                fillOpacity={0.1}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      </motion.div>
 
-      {/* System Resource Graph */}
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-[#111114]/40 backdrop-blur-xl border border-white/5 rounded-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] bg-gradient-to-br from-white/[0.05] to-transparent p-6"
-      >
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-2 bg-emerald-500/10 rounded-lg">
-            <Server size={20} className="text-emerald-500" />
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider">Network Throughput</h3>
-            <p className="text-[10px] text-slate-500">I/O traffic across all interfaces</p>
-          </div>
-        </div>
-        
-        <div className="h-[150px] w-full">
+        {/* Chart */}
+        <div className="h-[180px] w-full px-2 pt-3 pb-1">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data}>
-              <Area 
-                type="monotone" 
-                dataKey="network" 
-                stroke="#10b981" 
-                strokeWidth={2}
-                fill="#10b981" 
-                fillOpacity={0.1}
+            <ComposedChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+              <defs>
+                <linearGradient id="gradCpu" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.15} />
+                  <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="gradMem" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#a78bfa" stopOpacity={0.12} />
+                  <stop offset="100%" stopColor="#a78bfa" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid 
+                strokeDasharray="2 4" 
+                stroke="rgba(255,255,255,0.04)" 
+                vertical={false} 
               />
-            </AreaChart>
+              {/* Warning threshold */}
+              <ReferenceLine y={80} stroke="#f59e0b" strokeDasharray="3 3" strokeOpacity={0.4} />
+              <XAxis 
+                dataKey="time" 
+                tick={{ fontSize: 9, fill: '#4b4d59', fontFamily: 'JetBrains Mono, monospace' }}
+                axisLine={false}
+                tickLine={false}
+                interval="preserveStartEnd"
+                tickCount={5}
+              />
+              <YAxis
+                domain={[0, 100]}
+                tick={{ fontSize: 9, fill: '#4b4d59', fontFamily: 'JetBrains Mono, monospace' }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={v => `${v}%`}
+                width={32}
+              />
+              <Tooltip content={<ChartTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.06)', strokeWidth: 1 }} />
+              <Area 
+                type="monotone" dataKey="cpu" name="cpu"
+                stroke="#3b82f6" strokeWidth={1.5}
+                fill="url(#gradCpu)" isAnimationActive={false}
+              />
+              <Line 
+                type="monotone" dataKey="memory" name="memory"
+                stroke="#a78bfa" strokeWidth={1.5} dot={false}
+                isAnimationActive={false}
+              />
+            </ComposedChart>
           </ResponsiveContainer>
         </div>
-      </motion.div>
+
+        {/* Inline stats footer */}
+        <div className="flex divide-x divide-white/[0.05] border-t border-white/[0.05]">
+          {[
+            { label: 'cpu now',  value: latest.cpu != null ? `${latest.cpu.toFixed(1)}%` : '—', accent: 'text-accent-blue' },
+            { label: 'cpu avg',  value: `${avgCpu}%`,  accent: 'text-slate-400' },
+            { label: 'cpu peak', value: `${peakCpu}%`, accent: 'text-accent-amber' },
+            { label: 'mem now',  value: latest.memory != null ? `${latest.memory.toFixed(0)} MB` : '—', accent: 'text-accent-purple' },
+            { label: 'mem avg',  value: `${avgMem} MB`, accent: 'text-slate-400' },
+          ].map((s, i) => (
+            <div key={i} className="flex-1 flex flex-col items-center py-2 gap-0.5">
+              <span className="font-mono text-2xs text-slate-600 uppercase">{s.label}</span>
+              <span className={`font-mono text-xs font-medium ${s.accent} tabular-nums`}>{s.value}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* === SECONDARY: 2-col smaller charts === */}
+      <div className="grid grid-cols-2 gap-3">
+        {/* Container count trend */}
+        <div className="card p-0 overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-2.5 border-b border-white/[0.05]">
+            <div className="flex items-center gap-2">
+              <Activity size={11} className="text-slate-500" />
+              <span className="text-2xs font-medium text-slate-300">Container Count</span>
+            </div>
+            <span className="font-mono text-2xs text-accent-cyan tabular-nums">
+              {latest.containers ?? '—'} running
+            </span>
+          </div>
+          <div className="h-[100px] px-1 pt-2 pb-1">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={data} margin={{ top: 2, right: 4, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="gradCtrs" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#22d3ee" stopOpacity={0.2} />
+                    <stop offset="100%" stopColor="#22d3ee" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.03)" vertical={false} />
+                <XAxis dataKey="time" hide />
+                <YAxis hide allowDecimals={false} domain={['auto', 'auto']} />
+                <Tooltip content={<ChartTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.05)' }} />
+                <Area type="stepAfter" dataKey="containers" name="containers"
+                  stroke="#22d3ee" strokeWidth={1.5}
+                  fill="url(#gradCtrs)" isAnimationActive={false}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Network I/O */}
+        <div className="card p-0 overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-2.5 border-b border-white/[0.05]">
+            <div className="flex items-center gap-2">
+              <Wifi size={11} className="text-slate-500" />
+              <span className="text-2xs font-medium text-slate-300">Network I/O</span>
+            </div>
+            <span className="font-mono text-2xs text-accent-green tabular-nums">
+              {latest.network != null ? `${latest.network.toFixed(0)} Mbps` : '—'}
+            </span>
+          </div>
+          <div className="h-[100px] px-1 pt-2 pb-1">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={data} margin={{ top: 2, right: 4, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="gradNet" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#22c55e" stopOpacity={0.2} />
+                    <stop offset="100%" stopColor="#22c55e" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="2 4" stroke="rgba(255,255,255,0.03)" vertical={false} />
+                <XAxis dataKey="time" hide />
+                <YAxis hide domain={['auto', 'auto']} />
+                <Tooltip content={<ChartTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.05)' }} />
+                <Area type="monotone" dataKey="network" name="network"
+                  stroke="#22c55e" strokeWidth={1.5}
+                  fill="url(#gradNet)" isAnimationActive={false}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

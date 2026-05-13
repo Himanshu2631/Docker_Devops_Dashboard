@@ -17,7 +17,10 @@ import DashboardView from './pages/DashboardView';
 import ContainersView from './pages/ContainersView';
 import Topology from './pages/Topology';
 import Analytics from './pages/Analytics';
-import AICopilot from './pages/AICopilot';
+import ImagesView from './pages/ImagesView';
+import SecurityView from './pages/SecurityView';
+import SettingsView from './pages/SettingsView';
+
 
 function AppContent() {
   const [activeView, setActiveView] = useState('dashboard');
@@ -134,7 +137,7 @@ function AppContent() {
       <Sidebar activeView={activeView} onViewChange={setActiveView} />
       <Navbar />
 
-      <main className="pl-[280px] pt-28 pr-8 pb-32 min-h-screen">
+      <main className="pl-[236px] pt-[72px] pr-6 pb-20 min-h-screen">
         <div className="max-w-[1600px] mx-auto">
           <AnimatePresence mode="wait">
             {activeView === 'dashboard' && (
@@ -167,9 +170,16 @@ function AppContent() {
             {activeView === 'analytics' && (
               <Analytics key="analytics" containers={containers} />
             )}
-            {activeView === 'ai' && (
-              <AICopilot key="ai" />
+            {activeView === 'images' && (
+              <ImagesView key="images" />
             )}
+            {activeView === 'security' && (
+              <SecurityView key="security" />
+            )}
+            {activeView === 'settings' && (
+              <SettingsView key="settings" />
+            )}
+
           </AnimatePresence>
         </div>
       </main>

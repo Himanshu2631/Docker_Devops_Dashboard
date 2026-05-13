@@ -6,30 +6,45 @@ module.exports = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
+      },
       colors: {
-        dark: "#0a0a0c",
-        surface: "#111114",
-        "surface-light": "#16161a",
+        // Background layers
+        dark: "#09090b",
+        surface: {
+          DEFAULT: "#0f0f12",
+          1: "#111116",
+          2: "#18181d",
+          3: "#1f1f26",
+        },
+        border: {
+          DEFAULT: "rgba(255,255,255,0.06)",
+          strong: "rgba(255,255,255,0.12)",
+        },
+        // Accent palette — restrained and intentional
         accent: {
-          blue: "#3b82f6",
-          cyan: "#06b6d4",
-          purple: "#8b5cf6",
+          blue:   "#3b82f6",
+          cyan:   "#22d3ee",
+          green:  "#22c55e",
+          amber:  "#f59e0b",
+          red:    "#f43f5e",
+          purple: "#a78bfa",
+        },
+        // Text scale
+        text: {
+          primary:   "#f1f1f3",
+          secondary: "#8b8d98",
+          muted:     "#4b4d59",
         },
       },
-      backgroundImage: {
-        "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
-        "glass-gradient": "linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0) 100%)",
+      fontSize: {
+        "2xs": ["0.65rem", { lineHeight: "1rem" }],
       },
       animation: {
         "pulse-slow": "pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite",
-        "glow": "glow 2s ease-in-out infinite alternate",
       },
-      keyframes: {
-        glow: {
-          "0%": { boxShadow: "0 0 5px rgba(59, 130, 246, 0.2)" },
-          "100%": { boxShadow: "0 0 20px rgba(59, 130, 246, 0.6)" },
-        }
-      }
     },
   },
   plugins: [],

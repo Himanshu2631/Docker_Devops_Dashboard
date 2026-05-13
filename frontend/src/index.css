@@ -4,18 +4,97 @@
 
 :root {
   color-scheme: dark;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  /* Motion system — Vercel/Linear-style timing */
+  --ease-std:   cubic-bezier(0.16, 1, 0.3, 1);   /* snappy out */
+  --ease-in:    cubic-bezier(0.4, 0, 1, 1);
+  --ease-out:   cubic-bezier(0, 0, 0.2, 1);
+  --dur-fast:   80ms;
+  --dur-base:   140ms;
+  --dur-slow:   220ms;
 }
 
 @layer base {
   body {
-    background-color: #0a0a0c;
-    @apply text-slate-300 font-sans antialiased;
+    background-color: #09090b;
+    font-family: var(--font-sans);
+    @apply text-slate-300 antialiased;
     margin: 0;
     overflow-x: hidden;
   }
+
+  * {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Tighten default text rendering */
+  h1, h2, h3, h4 {
+    font-feature-settings: "kern" 1, "ss01" 1;
+  }
+
+  code, pre, .font-mono {
+    font-family: var(--font-mono);
+  }
 }
 
-/* Background Ambient Glows */
+@layer components {
+  /* Unified card surface — replaces ad-hoc glass/gradient classes */
+  .card {
+    @apply bg-surface-1 border border-white/[0.06] rounded-xl;
+  }
+
+  .card-sm {
+    @apply bg-surface-1 border border-white/[0.06] rounded-lg;
+  }
+
+  /* Monospace telemetry text — for metrics, IDs, statuses */
+  .telem {
+    font-family: var(--font-mono);
+    @apply text-xs text-slate-300 tabular-nums;
+  }
+
+  /* Restrained label style */
+  .label {
+    @apply text-2xs font-semibold text-slate-500 uppercase tracking-widest;
+  }
+
+  /* Status dot */
+  .status-dot-live {
+    @apply w-1.5 h-1.5 rounded-full bg-accent-green;
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  .status-dot-dead {
+    @apply w-1.5 h-1.5 rounded-full bg-slate-600;
+  }
+
+  /* Tactical button — subtle scale + brightness on press */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 font-medium text-sm
+           transition-all select-none cursor-pointer;
+    transition-duration: var(--dur-fast);
+    transition-timing-function: var(--ease-std);
+  }
+  .btn:hover  { filter: brightness(1.06); }
+  .btn:active { transform: scale(0.97); filter: brightness(0.95); }
+  .btn:disabled { @apply opacity-40 cursor-not-allowed; filter: none; transform: none; }
+
+  /* Skeleton — non-throbbing scan */
+  .skeleton {
+    @apply bg-surface-2 rounded-md relative overflow-hidden;
+  }
+  .skeleton::after {
+    content: '';
+    @apply absolute inset-0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.04) 50%, transparent 100%);
+    animation: skeleton-scan 1.6s ease-in-out infinite;
+  }
+}
+
+/* Subtle directional light — replaces large radial glows */
 .ambient-glow {
   position: fixed;
   top: 0;
@@ -24,11 +103,12 @@
   height: 100%;
   z-index: -1;
   pointer-events: none;
-  background: 
-    radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.05) 0%, transparent 40%),
-    radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.05) 0%, transparent 40%);
+  background:
+    radial-gradient(ellipse 60% 40% at 5% 0%, rgba(59, 130, 246, 0.04) 0%, transparent 100%),
+    radial-gradient(ellipse 40% 30% at 95% 100%, rgba(167, 139, 250, 0.03) 0%, transparent 100%);
 }
 
+/* Denser grid — Vercel/Linear style */
 .grid-overlay {
   position: fixed;
   top: 0;
@@ -37,33 +117,53 @@
   height: 100%;
   z-index: -1;
   pointer-events: none;
-  background-image: radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-  background-size: 40px 40px;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 24px 24px;
 }
 
-@keyframes pulse-glow {
-  0%, 100% { opacity: 0.5; filter: blur(8px); }
-  50% { opacity: 0.8; filter: blur(12px); }
+/* Scrollbar refinement */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.15);
 }
 
-.animate-pulse-glow {
-  animation: pulse-glow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+/* Terminal cursor blink */
+.animate-blink {
+  animation: blink 1s step-end infinite;
 }
-
 @keyframes blink {
   0%, 100% { opacity: 1; }
   50% { opacity: 0; }
 }
 
-.animate-blink {
-  animation: blink 1s step-end infinite;
+/* Subtle shimmer for updating state */
+@keyframes shimmer {
+  0%   { transform: translateX(-100%) skewX(-12deg); }
+  100% { transform: translateX(200%) skewX(-12deg); }
+}
+.animate-shimmer {
+  animation: shimmer 0.8s ease-in-out;
+}
+/* Skeleton scan keyframe */
+@keyframes skeleton-scan {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
 }
 
-.terminal-scroll::-webkit-scrollbar {
-  width: 4px;
-}
-
-.terminal-scroll::-webkit-scrollbar-thumb {
-  background-color: #27272a;
-  border-radius: 9999px;
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
