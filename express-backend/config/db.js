@@ -38,16 +38,16 @@ const connectDB = async () => {
     const finalUri = process.env.MONGO_URI || `mongodb+srv://${DB_USER}:${encodedPass}@${DB_HOST}/${DB_NAME || 'DockerTUI'}?retryWrites=true&w=majority`;
 
     // Masked log for security
-    const maskedLog = finalUri.includes('@') 
+    const maskedLog = finalUri.includes('@')
       ? `mongodb+srv://${DB_USER}:****@${DB_HOST || 'unknown'}`
       : 'mongodb://localhost:27017/...';
 
     console.log(`🔌 Attempting DB connection: ${maskedLog}`);
-    
+
     await mongoose.connect(finalUri, {
-      serverSelectionTimeoutMS: 15000 
+      serverSelectionTimeoutMS: 15000
     });
-    
+
     console.log(`🚀 MongoDB Connected: ${mongoose.connection.host}`);
   } catch (error) {
     console.error(`❌ DB Connection Error: ${error.message}`);
