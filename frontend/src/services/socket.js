@@ -6,7 +6,7 @@
 
 import { io } from 'socket.io-client';
 
-const SOCKET_URL = 'http://localhost:5000';
+const SOCKET_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 class SocketService {
   constructor() {
@@ -21,7 +21,7 @@ class SocketService {
     if (this.socket) return;
 
     console.log('🔌 Connecting to real-time event server...');
-    
+
     this.socket = io(SOCKET_URL, {
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
