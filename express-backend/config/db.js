@@ -38,9 +38,9 @@ const connectDB = async () => {
     const finalUri = process.env.MONGO_URI || `mongodb+srv://${DB_USER}:${encodedPass}@${DB_HOST}/${DB_NAME || 'DockerTUI'}?retryWrites=true&w=majority`;
 
     // Masked log for security
-    const maskedLog = finalUri.includes('@')
-      ? `mongodb+srv://${DB_USER}:****@${DB_HOST || 'unknown'}`
-      : 'mongodb://localhost:27017/...';
+    const maskedLog = process.env.MONGO_URI 
+      ? 'mongodb+srv://[HIDDEN_CREDENTIALS]@cluster...'
+      : `mongodb+srv://${DB_USER}:****@${DB_HOST || 'unknown'}`;
 
     console.log(`🔌 Attempting DB connection: ${maskedLog}`);
 

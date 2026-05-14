@@ -3,9 +3,7 @@ let docker;
 
 try {
     docker = new Docker();
-    // Test the connection immediately
-    docker.ping();
-    console.log('🐳 Docker Engine connected successfully');
+    console.log('🐳 Docker service initialized (checking for engine...)');
 } catch (err) {
     console.warn('⚠️ Docker Engine not found. Operating in Demo/Limited mode.');
     docker = null; // We will use this 'null' to send demo data later
